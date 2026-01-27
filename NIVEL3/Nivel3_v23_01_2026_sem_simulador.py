@@ -1,5 +1,5 @@
 # N3 LoRa Site Survey - Versão 23/01/2026 - WissTek-IoT UNICAMP - Lucas Alachev/Branquinho
-#
+# Teste branquinho no GitHub
 # ========= Bibliotecas =================================
 import serial
 import math
