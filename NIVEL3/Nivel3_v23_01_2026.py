@@ -1,4 +1,5 @@
 # N3 LoRa Site Survey - Versão 22/01/2026 - WissTek-IoT UNICAMP - Lucas Alachev
+#Versão do Rodolfo
 #Este script implementa o Nível 3 com funcionalidades de simulação e comunicação real através da interface serial
 # ========= Bibliotecas =================================
 import serial
