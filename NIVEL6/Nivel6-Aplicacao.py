@@ -92,7 +92,7 @@ def grafico_aplicacao(f,c):
 
         # --- PLOTAGEM DO GRÁFICO ---
         axis = f.add_subplot(111) # Apenas um gráfico grande
-        axis.plot(x_medidas, y_lum, label='Luminosidade (Invertida)', color='orange')
+        axis.plot(x_medidas, y_lum, label='Luminosidade', color='orange')
         axis.set_ylabel('Luminosidade (0-1023)')
         axis.set_xlabel('Medida')
         axis.set_ylim(0, 1050) # Fixo para ADC de 10 bits
