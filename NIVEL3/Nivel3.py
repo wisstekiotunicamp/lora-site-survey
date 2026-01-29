@@ -236,7 +236,11 @@ while True:
    if ser is None:
        try:
            # Ajuste a porta aqui (/dev/ttyUSB0 ou COMx)
-           ser = serial.Serial("/dev/ttyUSB0", 115200, timeout=0.5, parity=serial.PARITY_NONE)
+           print("Configuração da porta serial (caminho completo)")
+           print("Para Windows: COM3, COM4, etc")
+           print("Para Linux: /dev/ttyUSB0 , /dev/ttyUSB1, etc")
+           porta_serial = input("Digite aqui:")
+           ser = serial.Serial(porta_serial, 115200, timeout=0.5, parity=serial.PARITY_NONE)
            print("Porta Serial Conectada")
        except:
            pass # Se der erro, tenta de novo na próxima volta
