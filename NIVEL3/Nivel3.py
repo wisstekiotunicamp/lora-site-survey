@@ -34,7 +34,8 @@ rssi_UL = 0
 contador_DL = 0         
 contador_UL = 0         
 psr_geral = 0           
-perda_geral = 0         
+perda_geral = 0
+luminosidade = 0        # Nova variável de Aplicação
 
 # Máximos e Mínimos
 rssi_max_dl = -200
@@ -68,6 +69,7 @@ arquivo_parametros = os.path.join(dir_nivel4, 'PARAMETROS.txt')
 # Variáveis para nomes dos Logs (serão preenchidas no início do teste)
 arquivo_LOG_pacote = ""
 arquivo_LOG_gerencia = ""
+arquivo_LOG_aplicacao = "" # Novo Log definitivo de Aplicação
 
 # Limpeza inicial
 if os.path.exists(arquivo_gerencia_tmp): os.remove(arquivo_gerencia_tmp) 
@@ -123,10 +125,17 @@ def simulador_de_canal():
    for i in range(tamanho_do_pacote):
        Pacote_Sim[i] = Pacote_DL[i]
 
-   # Simula as RSSis de Downlink e Uplink
+   # Simula as RSSIs
    Pacote_Sim[0] = random.randint(-70, -44) 
    Pacote_Sim[1] = 2
    Pacote_Sim[2] = random.randint(-70, -44) 
+   
+   # Simula a Luminosidade (Aplicação)
+   # Gera um valor entre 0 e 1023 (similar ao LDR)
+   lum_simulada = random.randint(0, 1023)
+   Pacote_Sim[16] = 44 # Código do Sensor
+   Pacote_Sim[17] = int(lum_simulada / 256) # Parte alta
+   Pacote_Sim[18] = int(lum_simulada % 256) # Parte baixa
 
    if (Pacote_Sim[10] == 0 and Pacote_Sim[8] == 1):
          contador_ul_sim = contador_ul_sim + 1
@@ -151,11 +160,10 @@ def simulador_de_canal():
 # FUNÇÃO: UPLINK (Recebe pacote)
 # ==============================================================================
 def uplink():
-   global perda_geral, rssi_DL, rssi_UL, contador_UL, Pacote_UL
+   global perda_geral, rssi_DL, rssi_UL, contador_UL, Pacote_UL, luminosidade
    
    #Camada Física
    # Leitura do Hardware
-   #Se o modo de operação é 1 (real) e existe um objeto da serial
    if (modo_operacao == 1) and (ser is not None):
        if(ser.in_waiting > 0):
            
@@ -180,20 +188,18 @@ def uplink():
       valor_dl = Pacote_UL[0]
       valor_ul = Pacote_UL[2]
       
-      # Calcula a RSSI caso o modo de operação seja 1 (real)
+      # Calcula a RSSI
       if modo_operacao == 1:
           if valor_dl > 127: rssi_DL = valor_dl - 256
           else: rssi_DL = valor_dl
           
           if valor_ul > 127: rssi_UL = valor_ul - 256
           else: rssi_UL = valor_ul
-      #Caso o modo de operação seja 0 (simulado) entregar os valores simulados
       else:
           rssi_DL = valor_dl
           rssi_UL = valor_ul
 
       #Camada MAC - Não faz nada
-      
       
       #Camada Rede
       if(Pacote_UL[8] == 0 and Pacote_UL[10] == 1):
@@ -203,7 +209,9 @@ def uplink():
       contador_UL = int(Pacote_UL[14] * 256) + Pacote_UL[15]
       
       #Camada Aplicação
-      #Não faz nada nessa versão
+      # Reconstrói o valor bruto (0 a 1023)
+      luminosidade = int(Pacote_UL[17] * 256) + Pacote_UL[18]
+      
 
    else:
       perda_geral = perda_geral + 1
@@ -227,8 +235,19 @@ def gravaLOG_Gerencia():
      arquivo_def = open(arquivo_LOG_gerencia, 'a')
      print(strftime("%d/%m/%Y %H:%M:%S"), ";", medida_atual, ";", rssi_DL, ";", rssi_UL, ";", perda_geral, ";", round(psr_geral, 2), ";", rssi_max_dl, ";", rssi_min_dl, ";", rssi_max_ul, ";", rssi_min_ul, file=arquivo_def, sep='')
      arquivo_def.close()
+
+def gravaLOG_Aplicacao():
+     # Grava no temporário para o Nível 6 Aplicação ler
+     # Formato simples: Medida ; Luminosidade
+     arq_app_tmp = open(arquivo_aplicacao_tmp, 'a')
+     print(medida_atual, ";", luminosidade, file=arq_app_tmp, sep='')
+     arq_app_tmp.close()
+     
+     # Grava no Histórico definitivo
+     arq_app_def = open(arquivo_LOG_aplicacao, 'a')
+     print(strftime("%d/%m/%Y %H:%M:%S"), ";", medida_atual, ";", luminosidade, file=arq_app_def, sep='')
+     arq_app_def.close()
         
-#Calcula a PSR Geral 
 def calculaPSR():
     global medida_atual, perda_geral, psr_geral
     if medida_atual > 0:
@@ -237,7 +256,6 @@ def calculaPSR():
     else:
         psr_geral = 0.0
 
-#Acha o valor Máximo e Mínimo das RSSIs coletadas
 def calculaMaxMinRSSI():
     global rssi_DL, rssi_UL, rssi_max_dl, rssi_min_dl, rssi_max_ul, rssi_min_ul
     
@@ -256,7 +274,7 @@ def calculaMaxMinRSSI():
 # ==============================================================================
 while True:
    
-   # 1. Leitura de Parâmetros - Lê todo início de loop 
+   # 1. Leitura de Parâmetros
    if os.path.exists(arquivo_parametros):
        Parametros = open(arquivo_parametros, 'r')
        
@@ -272,10 +290,9 @@ while True:
            
        Parametros.close()
 
-   # 2. Controle da Serial (Liga/Desliga)
+   # 2. Controle da Serial
    if (modo_operacao == 1) and (ser is None):
        print("--- ATIVANDO MODO REAL ---")
-       # Ajuste a porta aqui (/dev/ttyUSB0 ou COMx)
        ser = serial.Serial("/dev/ttyUSB0", 115200, timeout=0.5, parity=serial.PARITY_NONE)
 
    if (modo_operacao == 0) and (ser is not None):
@@ -286,7 +303,7 @@ while True:
    # 3. Execução do Teste
    if (condicao_start == 1):
       
-      # SE FOR A PRIMEIRA MEDIDA (Medida 0), FAZ O SETUP INICIAL
+      # SETUP INICIAL (Primeira Medida)
       if (medida_atual == 0):
           print("################## INICIANDO NOVO TESTE #################")
           
@@ -296,61 +313,63 @@ while True:
           rssi_DL = 0; rssi_UL = 0
           rssi_max_dl = -200; rssi_min_dl = 200
           rssi_max_ul = -200; rssi_min_ul = 200
+          luminosidade = 0 # Reseta aplicação
           
-          # Cria Arquivos de Log novos
+          # Cria Nomes dos Arquivos de Log
           arquivo_LOG_pacote = os.path.join(dir_nivel4, strftime("LOG_pacote_%Y_%m_%d_%H-%M-%S.txt"))
           arquivo_LOG_gerencia = os.path.join(dir_nivel4, strftime("LOG_gerencia_%Y_%m_%d_%H-%M-%S.txt"))
+          arquivo_LOG_aplicacao = os.path.join(dir_nivel4, strftime("LOG_aplicacao_%Y_%m_%d_%H-%M-%S.txt"))
           
-          # Cria cabeçalhos
+          # Cria cabeçalhos (Gerência)
           arq_log = open(arquivo_LOG_gerencia, 'w')
           print ('Time stamp;Contador;RSSI_DL;RSSI_UL;Perdas;PSR;Max_DL;Min_DL;Max_UL;Min_UL', file=arq_log)
           arq_log.close()
           
-          # Limpa temporário
+          # Cria cabeçalhos (Aplicação)
+          arq_app = open(arquivo_LOG_aplicacao, 'w')
+          print ('Time stamp;Medida;Luminosidade', file=arq_app)
+          arq_app.close()
+          
+          # Limpa temporários
           arq_tmp = open(arquivo_gerencia_tmp, 'w')
           arq_tmp.close()
+          arq_tmp_app = open(arquivo_aplicacao_tmp, 'w')
+          arq_tmp_app.close()
 
-      # VERIFICA SE DEVE CONTINUAR MEDINDO
+      # MEDIÇÃO
       if (medida_atual < numero_de_medidas):
          medida_atual = medida_atual + 1
          print("### Medida:", medida_atual, "de ", numero_de_medidas)
 
-         #Chama a função de downlink para enviar o pacote
          downlink()
          time.sleep(tempo_entre_medidas)
          
-         #Se está no modo simulador, chama a função de simulação do canal
          if (modo_operacao == 0):
             simulador_de_canal()
         
-         #Chama a função de uplink para receber o pacote
          uplink()
          
-         #Chama a função de registro do pacote bruto
          gravaLOG_Pacote()
-         
          calculaPSR()
          calculaMaxMinRSSI() 
+         
+         # Grava os dados
          gravaLOG_Gerencia()
+         gravaLOG_Aplicacao() # Chama a nova função de log
          
       else:
          # FIM DO TESTE
          print("################## TESTE FINALIZADO ##################")
          
-         # Para o teste alterando o arquivo de parâmetros
          Parametros = open(arquivo_parametros, 'w')
          Parametros.write("0\n0\n") 
          Parametros.write(str(modo_operacao)) 
          Parametros.close()
          
-         # Reseta a condição local para parar de entrar neste IF
          condicao_start = 0
-         # Reseta medida atual para que o próximo teste comece do zero
          medida_atual = 0
 
    else:
-     # Se condicao_start for 0
-     # Garante que medida está zerada para o próximo teste ser detectado como novo
      medida_atual = 0 
      print("Script pausado...")
      time.sleep(2)
