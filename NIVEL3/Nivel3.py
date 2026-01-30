@@ -146,12 +146,20 @@ def uplink():
       val_dl = Pacote_UL[0]
       val_ul = Pacote_UL[2]
       
-      # Conversão de Byte para RSSI Negativo (Complemento)
-      if val_dl > 127: rssi_DL = val_dl - 256
-      else: rssi_DL = val_dl
+      # Conversão de Byte para RSSI (Cálculo Ajustado)
+      # Fórmula: dbm = ((rssi_int - 256) / 2.0) - 74.0 (se > 127) ou (rssi_int / 2.0) - 74.0
       
-      if val_ul > 127: rssi_UL = val_ul - 256
-      else: rssi_UL = val_ul
+      # Cálculo para Downlink
+      if val_dl > 127:
+          rssi_DL = ((val_dl - 256) / 2.0) - 74.0
+      else:
+          rssi_DL = (val_dl / 2.0) - 74.0
+      
+      # Cálculo para Uplink
+      if val_ul > 127:
+          rssi_UL = ((val_ul - 256) / 2.0) - 74.0
+      else:
+          rssi_UL = (val_ul / 2.0) - 74.0
 
    # Camada MAC
 
