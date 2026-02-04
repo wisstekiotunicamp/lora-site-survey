@@ -25,37 +25,34 @@ titulo_parametrizacao = Label(reg_parametrizacao, font=("Arial", 14, "bold"),tex
 
 #---------------------- CRIAÇÃO DO INTERVALO DE MEDIDAS ------------------------
 intervalo = Label(reg_parametrizacao, text = "Qtde. de Medidas", font=("Arial", 12))
-intervalo.place(x=20,y=50)
+intervalo.place(x=20,y=40)
 valor_intervalo=Entry(reg_parametrizacao, width=10, font=("Arial", 12))
-valor_intervalo.place(x=170,y=50)
+valor_intervalo.place(x=170,y=40)
 valor_intervalo.insert(0, "0")
 
 # Label de Feedback de Status
 status_texto = StringVar()
 status_texto.set("AGUARDANDO...")
 label_status = Label(reg_parametrizacao, textvariable=status_texto, font=("Arial", 10, "bold"), fg="gray")
-label_status.place(x=25, y=145) 
+label_status.place(x=25, y=130) 
 
 def captura_num_medidas():
-    try:
-        num_medidas = int(valor_intervalo.get())
-    except:
+    if valor_intervalo.get() == "":
         num_medidas = 0
+    else:
+        num_medidas = int(valor_intervalo.get())
         
     if(num_medidas == 0):
          num_medidas = 1000000
 
     return int(num_medidas)
 
-#-------------------------------------------------------------------------------
-
-
 #------------------------------ GRAVACAO DOS COMANDOS --------------------------
 def grava_comandos(condicao_start):
     arquivo_txt = os.path.join(os.path.dirname(__file__), '../NIVEL4/PARAMETROS.txt') 
     s = open(arquivo_txt,'w')
-    s.write(str(condicao_start)+"\n")
-    s.write(str(captura_num_medidas())+"\n")
+    s.write(str(condicao_start)+"\n")      # Linha 1: Start/Stop
+    s.write(str(captura_num_medidas())+"\n") # Linha 2: Numero de medidas
     s.close()
 #-------------------------------------------------------------------------------
 
@@ -66,13 +63,13 @@ def iniciar_teste():
     label_status.config(fg="green")
 
 bot_ini_teste=Button(reg_parametrizacao,text="INICIAR TESTE",font=("Arial", 14, "bold"), width=20,command=iniciar_teste)
-bot_ini_teste.place(x=25,y=100)
+bot_ini_teste.place(x=25,y=80) 
 bot_ini_teste.config(state="normal")
 #-------------------------------------------------------------------------------
 
 #------------------------- CRIAÇÃO DA REGIÃO DE DESEMPENHO ---------------------
 reg_desempenho = Frame(master=janela_principal,borderwidth=1, relief='sunken') 
-reg_desempenho.place(x=10,y=190,width=300,height=410) 
+reg_desempenho.place(x=10,y=240,width=300,height=410) 
 
 titulo_desempenho = Label(reg_desempenho, font=("Arial", 16, "bold"),text = "DESEMPENHO",padx=5,pady=5).pack(side=TOP, anchor="n")
 
@@ -85,8 +82,6 @@ RUP.place(x=150, y=175, anchor="center")
 
 RPSR = Label(reg_desempenho, font=("Arial", 13, "bold"), text="PSR (Geral)", fg="green", padx=5, pady=5)
 RPSR.place(x=150, y=295, anchor="center")
-
-abstracao_rssi = ["0"]*10
 
 # --- VARIÁVEIS DE TEXTO ---
 str_atual_dl = StringVar()
@@ -155,6 +150,12 @@ def grafico_rssi(f,c):
 
         psr_dl=[] 
         
+        # Variáveis locais para guardar o último valor de Max/Min lido
+        ultimo_max_dl = "0"
+        ultimo_min_dl = "0"
+        ultimo_max_ul = "0"
+        ultimo_min_ul = "0"
+        
         # Leitura do arquivo .tmp
         path_tmp = os.path.join(os.path.dirname(__file__), '../NIVEL4/dados_gerencia.tmp')
         
@@ -170,12 +171,19 @@ def grafico_rssi(f,c):
                 pass
 
         for i in range(len(y)):
-            if len(y[i]) >= 5:
-                if((y[i][0])!='') and ((y[i][1])!='') and ((y[i][2])!='') and ((y[i][3])!='') and ((y[i][4])!=''):
+            # Agora verificamos se tem 9 colunas (as 5 originais + 4 novas de Max/Min)
+            if len(y[i]) >= 9:
+                if((y[i][0])!=''):
                     z.append(int(y[i][0]))     # Contador
                     x.append(float(y[i][1]))   # RSSI DL
                     psr_dl.append(float(y[i][2])) # PSR Geral
                     xUP.append(float(y[i][4])) # RSSI UL
+                    
+                    # Lê as colunas extras:
+                    ultimo_max_dl = y[i][5] # Coluna 6 (Indice 5)
+                    ultimo_min_dl = y[i][6] # Coluna 7 (Indice 6)
+                    ultimo_max_ul = y[i][7] # Coluna 8 (Indice 7)
+                    ultimo_min_ul = y[i][8] # Coluna 9 (Indice 8)
         
         # --- ATUALIZAÇÃO DOS VALORES "ATUAL" ---
         if len(x) > 0:
@@ -205,37 +213,26 @@ def grafico_rssi(f,c):
         axis2.set_ylim(-5, 105) 
         axis2.legend(loc='upper right', fontsize='x-small')
 
-        # Leitura segura do arquivo de abstração (Max/Min)
-        path_abs = os.path.join(os.path.dirname(__file__), '../NIVEL4/dados_abstracao.txt')
-        if os.path.exists(path_abs):
-           with open(path_abs, 'r') as file_abstracao:
-              index = 0
-              for line in file_abstracao:
-                  line = line.strip()
-                  if line and index < 10:
-                      abstracao_rssi[index] = str(round(float(line)*100)/100)
-                      index += 1
-        else:
-           abstracao_rssi = ["0"] * 10
-
-        # Atualiza os Labels de Max e Min
-        str_max_dl.set("Máx: " + abstracao_rssi[0] + " dBm")
-        str_min_dl.set("Mín: " + abstracao_rssi[1] + " dBm") 
+        # Atualiza os textos da tela com o último valor lido do arquivo
+        str_max_dl.set("Máx: " + ultimo_max_dl + " dBm")
+        str_min_dl.set("Mín: " + ultimo_min_dl + " dBm") 
         
-        str_max_ul.set("Máx: " + abstracao_rssi[6] + " dBm")
-        str_min_ul.set("Mín: " + abstracao_rssi[7] + " dBm") 
+        str_max_ul.set("Máx: " + ultimo_max_ul + " dBm")
+        str_min_ul.set("Mín: " + ultimo_min_ul + " dBm") 
 
         # --- VERIFICAÇÃO AUTOMÁTICA DE STATUS (FIM DE TESTE) ---
         # Se encontrar "0" na primeira linha de PARAMETROS.txt, atualiza para FINALIZADO
         path_param = os.path.join(os.path.dirname(__file__), '../NIVEL4/PARAMETROS.txt')
         if os.path.exists(path_param):
             try:
-                with open(path_param, 'r') as pp:
-                    status_lido = pp.readline().strip()
-                    # Se o status for 0 E o texto ainda estiver dizendo "EM ANDAMENTO", atualiza.
-                    if status_lido == '0' and status_texto.get() == "TESTE EM ANDAMENTO...":
-                        status_texto.set("TESTE FINALIZADO")
-                        label_status.config(fg="blue") # Azul para diferenciar do vermelho (cancelado) e verde (andamento)
+                pp = open(path_param, 'r')
+                status_lido = pp.readline().strip()
+                pp.close()
+                
+                # Se o status for 0 E o texto ainda estiver dizendo "EM ANDAMENTO", atualiza.
+                if status_lido == '0' and status_texto.get() == "TESTE EM ANDAMENTO...":
+                    status_texto.set("TESTE FINALIZADO")
+                    label_status.config(fg="blue") 
             except:
                 pass
 
