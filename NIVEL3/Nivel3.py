@@ -2,6 +2,7 @@
 # Versão Final - Modo Real + Aplicação (Comentários Originais Restaurados)
 # Versão Teste - Adição do Envio Configurações de Rádio LoRa para devices LoRa - Anderson Fumachi
 #----------------------------------------------------------
+#Versão de Desenvolvimento
 #----------------------------------------------------------
 # ========= Bibliotecas =================================
 import serial
