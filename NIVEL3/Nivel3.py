@@ -1,7 +1,8 @@
 # N3 LoRa Site Survey - Versão 28/01/2026 - WissTek-IoT UNICAMP
 # Versão Final - Modo Real + Aplicação (Comentários Originais Restaurados)
 # Versão Teste - Adição do Envio Configurações de Rádio LoRa para devices LoRa - Anderson Fumachi
-
+#----------------------------------------------------------
+#----------------------------------------------------------
 # ========= Bibliotecas =================================
 import serial
 import math
