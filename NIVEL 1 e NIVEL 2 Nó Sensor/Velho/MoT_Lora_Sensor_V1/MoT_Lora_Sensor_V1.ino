@@ -46,7 +46,9 @@ void setup() {
   //-------------- Inicializa a camada de Aplicação -----------------
   // neste bloco são configurações específicas da aplicação
   pinMode(D2, OUTPUT);
-  pinMode(D4, OUTPUT);
+  pinMode(PIN_LED_ONBOARD, OUTPUT);
+  digitalWrite(PIN_LED_ONBOARD, LOW);
+  Serial.println("LoRa NODE SENSOR Init OK.");
 }
 
 //=======================================================================

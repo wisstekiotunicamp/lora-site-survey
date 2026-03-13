@@ -1,5 +1,6 @@
 # N3 LoRa Site Survey - Versão 28/01/2026 - WissTek-IoT UNICAMP
 # Versão Final - Modo Real + Aplicação (Comentários Originais Restaurados)
+# Versão Teste - Adição do Envio Configurações de Rádio LoRa para devices LoRa - Anderson Fumachi
 
 # ========= Bibliotecas =================================
 import serial
@@ -18,6 +19,10 @@ numero_de_medidas = 0
 rota = [] # neste momento é um enlace ponto a ponto, que futuramente poderá ser usada para roteamento
 condicao_start = 0
 medida_atual = 0 # Variáveis Auxiliares
+valor_spreadingfactor = 12
+valor_bandwidth = 125000
+valor_codingrate = 5
+valor_tx_power = 17
 
  # Camada Física
 tamanho_do_pacote = 52 
@@ -26,9 +31,30 @@ rssi_UL = 0
 snr_DL = 0
 snr_UL = 0
 
- # Camada MAC
-tempo_entre_medidas = 1
+ # Configuração Inicial Rádio LoRa
+valor_init_SF = 12 # Spreading Factor inicial = Maior espalhamento possível 12 (de 7 a 12)
+valor_init_BW = 1 # Bandwidth inicial = 125kHz (1 = 125kHz | 2 = 250kHz | 3 = 500kHz)
+valor_init_CR = 5 # CodingRate Denominator = 5/4 (5/4 | 6/4 | 7/4 | 8/4)
+valor_init_PW = 17 # TX Power = 1 a 17 ?
+cmd_init_config = 0 # Comando de Downlink de mudança de configuração de rádio LoRa
 
+ # Configuração Atual - rodando - Rádio LoRa
+valor_run_SF = 12 # Spreading Factor inicial = Maior espalhamento possível 12 (de 7 a 12)
+valor_run_BW = 1 # Bandwidth inicial = 125kHz (1 = 125kHz | 2 = 250kHz | 3 = 500kHz)
+valor_run_CR = 5 # CodingRate Denominator = 5/4 (5/4 | 6/4 | 7/4 | 8/4)
+valor_run_PW = 17 # TX Power = 1 a 17 ?
+cmd_run_config = 0 # Comando de Downlink de mudança de configuração de rádio LoRa
+
+ # Configuração Nova Rádio LoRa recebida pelo Nível 6
+valor_new_SF = 12 # Spreading Factor inicial = Maior espalhamento possível 12 (de 7 a 12)
+valor_new_BW = 1 # Bandwidth inicial = 125kHz (1 = 125kHz | 2 = 250kHz | 3 = 500kHz)
+valor_new_CR = 5 # CodingRate Denominator = 5/4 (5/4 | 6/4 | 7/4 | 8/4)
+valor_new_PW = 17 # TX Power = 1 a 17 ?
+cmd_new_config = 0 # Comando de Downlink de mudança de configuração de rádio LoRa
+
+ # Camada MAC
+tempo_entre_medidas = 10 # original = 1 # alterado para 10 pior caso SF12/vw125k/cr8/pw17
+tempo_entre_medidas_inicial = 10
  # Camada de Rede
 ID_base = 0
 ID_sensor = 1
@@ -42,6 +68,10 @@ ultimo_pacote_UL = 0
  # Camada de Aplicação
 luminosidade = 0 # Nova variável para leitura do LDR
 air_quality_indicator = 0
+
+# Adição variáveis de controle do ciclo de modif. configuração rádio LoRa
+start_teste_site_suvey = 0
+confirm_new_config = 0
 
  # Contabilização de PSR
 psr_DL = 0
@@ -78,13 +108,56 @@ if os.path.exists(os.path.join(dir_nivel4, 'dados_aplicacao.tmp')):# Procura no 
 # Cria o arquivo de parâmetros zerado para garantir estado inicial
 arquivo_parametros = os.path.join(dir_nivel4, 'PARAMETROS.txt')
 Parametros = open(arquivo_parametros, 'w')
-Parametros.write("0\n0\n") 
+Parametros.write("0\n0\n12\n125000\n5\n17\n") # Adicionadas as linhas n12\n125000\n5\n17 no arquivo temporário de SF\BW\CR\PW
 Parametros.close()
 
 # Variáveis de Arquivo (serão definidas no loop ao iniciar o teste)
 arquivo_LOG_pacote = ""
 arquivo_LOG_gerencia = ""
 arquivo_LOG_aplicacao = ""
+
+
+#========== FUNÇÃO QUE RECONFIGURA RÁDIO LORA ================
+#========== CASO MODIFICAÇÂO PELO USUÁRIO NO NÍVEL 6 ================
+# BYTE PacoteUL[11] recebe a confirmação dos ciclos de Pacotes DL-UL
+# Ciclo do Primeiro Pacote, informa aos devices LoRa que uma modificação de config. de rádio foi Comandada
+# BYTE PacoteDL[11] envia o Comando para os ciclos de Pacotes DL-UL informando a requisição da reconfig. da rádio
+def config_radio_lora():
+   global cmd_new_config, start_teste_site_suvey
+
+   while (confirm_new_config < 3): # Confirmação da modificação da rádio LoRa pelos devices em 3 ciclos de Pacotes DL & UL
+
+      if confirm_new_config <2: # Caso não confirmação de ambos devices (Base & Nó Sensor), continua enviando os comandos
+         cmd_new_config = 1 # Primeiro ciclo de Pacotes DL & UL para informar reconfig. rádio
+         cmd_lora() # Inicia envio DL + tempo + recebimento de UL
+
+      if (confirm_new_config == 2): # garante que Nivel 1 e Nivel 2 receberam nova configuração rádio LoRa para receber
+         # os novos valores de config. de rádio na próxima janela
+         cmd_new_config = 2 # Segundo ciclo de Pacotes DL & UL para informar reconfig. rádio para aplicar valores da nova configuração
+         cmd_lora() # Inicia envio DL + tempo + recebimento de UL
+         
+      if (confirm_new_config == 3): # indica que Nível 3 recebeu do nó sensor LoRa Nivel 1 & da base LoRa nivel 2 a confirmação
+         # da alteração da rádio LoRa
+         cmd_new_config = 3 # # Terceiro ciclo de Pacotes DL & UL para testar que a nova reconfig. foi efetivada
+         cmd_lora() # Inicia envio DL + tempo + recebimento de UL
+         
+      if (confirm_new_config == 4): # indica que Nível 3 já recebeu do nó sensor LoRa Nivel 1 e da base LoRa nivel 2 novos pacotes
+         # na nova configuração e aplica o Teste LoRa Site Survey
+         cmd_new_config = 0 # zera a variável de comando reconfig. rádio
+         start_teste_site_suvey = 1 # habilita inicio Teste LoRa Site Survey
+
+      # Imprime na Serial para DEBUG os status do comando e confirmação dos devices na reconfig. da rádio LoRa
+      print("### CMD CONFIG RADIO LORA ### ", cmd_new_config)
+      print("### CONFIRM CONFIG RADIO LORA ### ", confirm_new_config)
+
+
+#========== INICIA ENVIOS DE PACOTES VIA RÁDIO LORA ================
+#========== DOWNLINK E UPLINK - RÁDIO LORA ================
+def cmd_lora():
+   downlink()
+   time.sleep(tempo_entre_medidas_inicial)
+   uplink()
+
 
 #========== DOWNLINK ================
 def downlink():
@@ -93,6 +166,7 @@ def downlink():
    # Limpa o pacote para garantir que não tem lixo
    for i in range(tamanho_do_pacote):
        Pacote_DL[i] = 0
+
 
    # Camada de Aplicação
    #Por enquanto estes valores não significam nada para o Nó Sensor
@@ -107,19 +181,31 @@ def downlink():
    # Camada de Rede
    Pacote_DL[8] = ID_sensor
    Pacote_DL[10] = ID_base
-
+   
    # Camada MAC
+   Pacote_DL[4] = cmd_new_config  # Envio pelo Byte [11] do Pacote_DL o comando de alterar config. Rádio LoRa
+   
+   # Camada Física 
+   Pacote_DL[0] = valor_new_SF # Envio pelo Byte [0] do Pacote_DL do valor de Spreading Spectrum
+   Pacote_DL[1] = valor_new_BW # Envio pelo Byte [1] do Pacote_DL do valor de Bandwidth
+   Pacote_DL[2] = valor_new_CR # Envio pelo Byte [2] do Pacote_DL do valor de CondingRate
+   Pacote_DL[3] = valor_new_PW # Deixa preparado para alteração do usuário da Potência da Rádio LoRa
 
-   # Camada Física
-   # Envio para o Hardware (Modo Real)
+  # Envio para o Hardware (Modo Real)
    if (ser is not None):
        ser.write(bytearray(Pacote_DL))
-           
+
+
+
+      # Imprime Pacote_DL na Serial Para DEBUG
+   print("[Nível 3 - Borda] - Física - Pacote de Downlink")
+   print(*Pacote_DL)
+   print("================================================")        
    print('##### Pacote enviado para Nó Sensor (Downlink)')
 
 #========== UPLINK ==================
 def uplink():
-   global perda_geral, rssi_DL, rssi_UL, contador_UL, ultimo_pacote_DL, air_quality_indicator, Pacote_UL, luminosidade
+   global perda_geral, rssi_DL, rssi_UL, contador_UL, ultimo_pacote_DL, air_quality_indicator, Pacote_UL, luminosidade, confirm_new_config
    
    # Camada Física
    # Leitura do Hardware
@@ -128,23 +214,35 @@ def uplink():
        #Existe ao menos 1 byte esperando na serial?
        if(ser.in_waiting > 0):
            #Realiza a a leitura da serial
-           Pacote_UL_bytes = ser.read(52)
-           if len(Pacote_UL_bytes) == 52:
+           Pacote_UL_bytes = ser.read(tamanho_do_pacote) #52
+           if len(Pacote_UL_bytes) == tamanho_do_pacote: #52
                
                # Cria novamente um pacote vazio para receber os dados
                Pacote_UL = [0] * 52
                
                # Copia para o um vetor (lista) com números, pois o que chega da serial são bytes
-               for i in range(52):
+               for i in range(tamanho_do_pacote): #52
                    Pacote_UL[i] = Pacote_UL_bytes[i]
            else:
                Pacote_UL = [] 
        else:
            Pacote_UL = [] 
            
-   if(len(Pacote_UL)==52):
+   if(len(Pacote_UL)==tamanho_do_pacote): #52
       val_dl = Pacote_UL[0]
       val_ul = Pacote_UL[2]
+      
+      confirm_new_config = Pacote_UL[4] # recebe info de confirmação da nova configuração de rádio LoRa    
+
+      # Imprime na Serial para DEBUG
+      print("### CONFIRM CONFIG RADIO LORA ### ", confirm_new_config)
+
+      # Imprime Pacote_UL na Serial Para DEBUG
+      # ----------------------------------------------------------------------
+      print("[Nível 3 - Borda] - Física - Pacote de Uplink")
+      # ----------------------------------------------------------------------
+      print(*Pacote_UL)
+      print("================================================")
       
       # Conversão de Byte para RSSI (Cálculo Ajustado)
       # Fórmula: dbm = ((rssi_int - 256) / 2.0) - 74.0 (se > 127) ou (rssi_int / 2.0) - 74.0
@@ -231,14 +329,43 @@ def calculaMaxMinRSSI():
 
 #========== Leitura de Parâmetros =============
 while True:
-   # Leitura constante do arquivo de parâmetros
+   # Leitura constante do arquivo de parâmetros do Usuário Nível 6
    if os.path.exists(arquivo_parametros):
        Parametros = open(arquivo_parametros, 'r')
        line = Parametros.readline()
        if len(line) > 0: condicao_start = int(line)
        line = Parametros.readline()
        if len(line) > 0: numero_de_medidas = int(line)
+       line = Parametros.readline()
+       if len(line) > 0: valor_spreadingfactor = int(line)
+       line = Parametros.readline()
+       if len(line) > 0: valor_bandwidth = int(line)
+       line = Parametros.readline()
+       if len(line) > 0: valor_codingrate = int(line)
+       line = Parametros.readline()
+       if len(line) > 0: valor_tx_power = int(line)
+       line = Parametros.readline()
+       if len(line) > 0: tempo_entre_medidas = int(line) 
        Parametros.close()
+
+   # IMPRIME NA SERIAL PARA DEBUG OS VALORES RECEBIDOS DO NÍVEL 6 PARA RÁDIO LORA
+   valor_new_SF = valor_spreadingfactor
+   print("### VALOR SPREADING FACTOR: ", valor_spreadingfactor)
+   
+   if (valor_bandwidth == 125000):
+       valor_new_BW = 1
+   elif (valor_bandwidth == 250000):
+       valor_new_BW = 2
+   elif (valor_bandwidth == 500000):  
+       valor_new_BW = 3
+   print("### VALOR BANDWIDTH: ", valor_bandwidth)
+   
+   valor_new_CR = valor_codingrate
+   print("### VALOR CONDINGRATE: ", valor_codingrate)
+
+   valor_new_PW = valor_tx_power
+   print("### VALOR TX POWER: ", valor_tx_power)
+
 
    # Tentativa de Conexão Serial Automática (Se estiver desconectado)
    if ser is None:
@@ -248,18 +375,21 @@ while True:
            print("Para Windows: COM3, COM4, etc")
            print("Para Linux: /dev/ttyUSB0 , /dev/ttyUSB1, etc")
            porta_serial = input("Digite aqui:")
-           ser = serial.Serial(porta_serial, 115200, timeout=0.5, parity=serial.PARITY_NONE)
+           ser = serial.Serial(porta_serial, 115200, timeout=1, parity=serial.PARITY_NONE)
            print("Porta Serial Conectada")
        except:
            pass # Se der erro, tenta de novo na próxima volta
 
+
    if (condicao_start == 1):
-        
+       
       #Apenas para imprimir um cabeçalho dos testes no terminal
-      if (medida_atual == 0):
+      if (medida_atual == 0): # and (start_teste_site_suvey == 1)):
          print("################## Iniciando testes #################")
          
          # Reset de variáveis
+         # cmd_new_config = 0 # zera cmd
+         # confirm_new_config = 0 # zera cmd
          contador_DL = 0; contador_UL = 0; psr_geral = 0; perda_geral = 0
          rssi_DL = 0; rssi_UL = 0; luminosidade = 0
          rssi_max_dl = -200; rssi_min_dl = 200; rssi_max_ul = -200; rssi_min_ul = 200
@@ -288,6 +418,26 @@ while True:
          open(os.path.join(dir_nivel4, 'dados_aplicacao.tmp'), 'w').close()
       
       if (medida_atual < numero_de_medidas):
+         # if (medida_atual < (numero_de_medidas + start_teste_site_suvey)):
+         # Compara se há alteração na configuração do rádio LoRa pelo usuário e faz processo de modificação dos novos valores de rádio
+         if ((valor_new_SF != valor_run_SF) or (valor_new_BW != valor_run_BW) or (valor_new_CR != valor_run_CR) or (valor_new_PW != valor_run_PW)):
+            cmd_new_config = 1
+            print("### DETECTADO MUDANÇA DE CONFIG RADIO LORA ###", cmd_new_config)
+            config_radio_lora() # chama a função de reconfigurar os valores da rádio LoRa
+
+            # Salva os novos valores de rádio nas variáveis RUN - configuração rádio Rodando           
+            valor_run_SF = valor_new_SF
+            valor_run_BW = valor_new_BW
+            valor_run_CR = valor_new_CR
+            valor_run_PW = valor_new_PW
+            cmd_new_config = 0 # sera comando de reconfiguração
+            # confirm_new_config = 0 # zera confirmação
+         else:
+            start_teste_site_suvey = 0 # zera start
+            cmd_new_config = 0 # zera cmd
+            confirm_new_config = 0 # zera confirm
+ 
+
          medida_atual = medida_atual + 1
          print("### Medida:",medida_atual, "de ",numero_de_medidas)
 

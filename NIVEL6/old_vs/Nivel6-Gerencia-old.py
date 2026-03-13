@@ -18,7 +18,7 @@ janela_principal.resizable(True, True) # Possibilita o redimensionamento da jane
 
 #------------------------- CRIAÇÃO DA REGIÃO DE PARAMETRIZAÇÃO -----------------
 reg_parametrizacao = Frame(master=janela_principal,borderwidth=1, relief='sunken') 
-reg_parametrizacao.place(x=10,y=10,width=300,height=410) 
+reg_parametrizacao.place(x=10,y=10,width=300,height=470) 
 
 titulo_parametrizacao = Label(reg_parametrizacao, font=("Arial", 14, "bold"),text = "Configurações LoRa",padx=5,pady=5).pack(side=TOP, anchor="n")
 #-------------------------------------------------------------------------------
@@ -33,8 +33,6 @@ valor_intervalo.insert(0, "0")
 #---------------------- CRIAÇÃO DOS CAMPOS DE CONFIGURAÇÕES DE RÁDIO LORA ------------------------
 spreadingfactor = Label(reg_parametrizacao, text = "Spreading Factor", font=("Arial", 12))
 spreadingfactor.place(x=20,y=70)
-spreadingfactorinfo = Label(reg_parametrizacao, text = "7 a 12", font=("Arial", 8))
-spreadingfactorinfo.place(x=20,y=90)
 valor_spreadingfactor=Entry(reg_parametrizacao, width=10, font=("Arial", 12))
 valor_spreadingfactor.place(x=170,y=70)
 valor_spreadingfactor.insert(0, "12")
@@ -42,48 +40,26 @@ valor_spreadingfactor.insert(0, "12")
 
 #---------------------- CRIAÇÃO DOS CAMPOS DE CONFIGURAÇÕES DE RÁDIO LORA ------------------------
 bandwidth = Label(reg_parametrizacao, text = "Bandwidth", font=("Arial", 12))
-bandwidth.place(x=20,y=110)
-bandwidthinfo = Label(reg_parametrizacao, text = "125000, 250000, 500000 kHz", font=("Arial", 8))
-bandwidthinfo.place(x=20,y=130)
+bandwidth.place(x=20,y=100)
 valor_bandwidth=Entry(reg_parametrizacao, width=10, font=("Arial", 12))
-valor_bandwidth.place(x=170,y=110)
+valor_bandwidth.place(x=170,y=100)
 valor_bandwidth.insert(0, "125000")
 
 
 #---------------------- CRIAÇÃO DOS CAMPOS DE CONFIGURAÇÕES DE RÁDIO LORA ------------------------
 codingrate = Label(reg_parametrizacao, text = "CodingRate", font=("Arial", 12))
-codingrate.place(x=20,y=150)
-codingrateinfo = Label(reg_parametrizacao, text = "5 a 8 => 4/5, 4/6, 4/7, 4/8", font=("Arial", 8))
-codingrateinfo.place(x=20,y=170)
+codingrate.place(x=20,y=130)
 valor_codingrate=Entry(reg_parametrizacao, width=10, font=("Arial", 12))
-valor_codingrate.place(x=170,y=150)
-valor_codingrate.insert(0, "8")
+valor_codingrate.place(x=170,y=130)
+valor_codingrate.insert(0, "5")
 
-
-#---------------------- CRIAÇÃO DOS CAMPOS DE CONFIGURAÇÕES DE RÁDIO LORA ------------------------
-tx_power = Label(reg_parametrizacao, text = "TX Power", font=("Arial", 12))
-tx_power.place(x=20,y=190)
-tx_powerinfo = Label(reg_parametrizacao, text = "2 a 17dBm", font=("Arial", 8))
-tx_powerinfo.place(x=20,y=210)
-valor_tx_power=Entry(reg_parametrizacao, width=10, font=("Arial", 12))
-valor_tx_power.place(x=170,y=190)
-valor_tx_power.insert(0, "17")
-
-#---------------------- CRIAÇÃO DOS CAMPOS DE CONFIGURAÇÕES DE RÁDIO LORA ------------------------
-tempo_entre_medidas = Label(reg_parametrizacao, text = "Tmp. entre Pacotes", font=("Arial", 12))
-tempo_entre_medidas.place(x=20,y=230)
-tempo_entre_medidas_info = Label(reg_parametrizacao, text = "Min 0,4s", font=("Arial", 8))
-tempo_entre_medidas_info.place(x=20,y=250)
-valor_tempo_entre_medidas=Entry(reg_parametrizacao, width=10, font=("Arial", 12))
-valor_tempo_entre_medidas.place(x=170,y=230)
-valor_tempo_entre_medidas.insert(0, "10")
 
 
 # Label de Feedback de Status
 status_texto = StringVar()
 status_texto.set("AGUARDANDO...")
 label_status = Label(reg_parametrizacao, textvariable=status_texto, font=("Arial", 10, "bold"), fg="gray")
-label_status.place(x=25, y=280)
+label_status.place(x=25, y=230) 
 
 def captura_num_medidas():
     if valor_intervalo.get() == "":
@@ -134,7 +110,7 @@ def captura_num_bandwidth():
 
 def captura_num_codingrate():
     if valor_codingrate.get() == "":
-        num_codingrate = 8
+        num_codingrate = 5
     else:
         num_codingrate = int(valor_codingrate.get())
         
@@ -147,33 +123,6 @@ def captura_num_codingrate():
     return int(num_codingrate)
 
 
-def captura_num_tx_power():
-    if valor_tx_power.get() == "":
-        num_tx_power = 17
-    else:
-        num_tx_power = int(valor_tx_power.get())
-        
-    if(num_tx_power <= 2):
-         num_tx_power = 2
-
-    if(num_tx_power >= 20):
-        num_tx_power = 20
-
-    return int(num_tx_power)
-
-def captura_num_tempo_entre_medidas():
-    if valor_tempo_entre_medidas.get() == "":
-        num_tempo_entre_medidas = 10
-    else:
-        num_tempo_entre_medidas = int(valor_tempo_entre_medidas.get())
-        
-    if(num_tempo_entre_medidas <= 1):
-         num_tempo_entre_medidas = 1
-
-    if(num_tempo_entre_medidas >= 20):
-        num_tempo_entre_medidas = 20
-
-    return int(num_tempo_entre_medidas)
 #------------------------------ GRAVACAO DOS COMANDOS --------------------------
 def grava_comandos(condicao_start):
     arquivo_txt = os.path.join(os.path.dirname(__file__), '../NIVEL4/PARAMETROS.txt') 
@@ -183,8 +132,6 @@ def grava_comandos(condicao_start):
     s.write(str(captura_num_spreadingfactor())+"\n") # Linha 3: Spreading Factor
     s.write(str(captura_num_bandwidth())+"\n") # Linha 4: Bandwidth
     s.write(str(captura_num_codingrate())+"\n") # Linha 5: CodingRate Denominator
-    s.write(str(captura_num_tx_power())+"\n") # Linha 6: TX POWER
-    s.write(str(captura_num_tempo_entre_medidas())+"\n") # Linha 7: Tempo entre Medidas
     s.close()
 #-------------------------------------------------------------------------------
 
@@ -195,14 +142,14 @@ def iniciar_teste():
     label_status.config(fg="green")
 
 bot_ini_teste=Button(reg_parametrizacao,text="INICIAR TESTE",font=("Arial", 14, "bold"), width=20,command=iniciar_teste)
-bot_ini_teste.place(x=25,y=310) 
+bot_ini_teste.place(x=25,y=170) 
 bot_ini_teste.config(state="normal")
 #-------------------------------------------------------------------------------
 
 #------------------------- CRIAÇÃO DA REGIÃO DE DESEMPENHO ---------------------
 reg_desempenho = Frame(master=janela_principal,borderwidth=1, relief='sunken') 
 #reg_desempenho.place(x=10,y=240,width=300,height=410) 
-reg_desempenho.place(x=10,y=370,width=300,height=410)
+reg_desempenho.place(x=10,y=290,width=300,height=410)
 
 titulo_desempenho = Label(reg_desempenho, font=("Arial", 16, "bold"),text = "Desempenho de Rede",padx=5,pady=5).pack(side=TOP, anchor="n")
 
@@ -216,8 +163,6 @@ RUP.place(x=150, y=175, anchor="center")
 RPSR = Label(reg_desempenho, font=("Arial", 13, "bold"), text="PSR (Geral)", fg="green", padx=5, pady=5)
 RPSR.place(x=150, y=295, anchor="center")
 
-#TXCANAL = Label(reg_desempenho, font=("Arial", 13, "bold"), text="PSR (Geral)", fg="green", padx=5, pady=5) 
-#TXCANAL.place(x=150, y=295, anchor="center")
 # --- VARIÁVEIS DE TEXTO ---
 str_atual_dl = StringVar()
 str_max_dl = StringVar()
@@ -228,9 +173,6 @@ str_max_ul = StringVar()
 str_min_ul = StringVar()
 
 str_atual_psr = StringVar()
-
-str_taxa_de_canal = StringVar()
-str_air_time = StringVar()
 
 # Inicialização
 str_atual_dl.set("Atual: -- dBm")
@@ -263,11 +205,6 @@ lbl_min_ul.place(x=10, y=250)
 lbl_atual_psr = Label(reg_desempenho, font=("Arial", 14, "bold"),textvariable = str_atual_psr,padx=5,pady=2)
 lbl_atual_psr.place(x=150, y=335, anchor="center") 
 
-# --- Taxa de Canal ---
-#lbl_atual_TC = Label(reg_desempenho, font=("Arial", 12, "bold"),textvariable = str_taxa_de_canal,padx=5,pady=2)
-#lbl_atual_TC.place(x=10, y=80) 
-#lbl_air_time = Label(reg_desempenho, font=("Arial", 11),textvariable = str_taxa_de_canal,padx=5,pady=2)
-#lbl_air_time.place(x=10, y=105) 
 
 #-------------------------------------------------------------------------------
 

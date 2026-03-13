@@ -1,6 +1,7 @@
 /*
   MoT LoRa | WissTek IoT
   Desenvolvido por: Victor Gomes e Raphael Montali da Assumpção
+  Adicionado Teste de Reconfiguração da Rádio LoRa por: Anderson Fumachi
 */
 
 //=======================================================================
@@ -27,7 +28,7 @@ Serial.begin(TAXA_SERIAL);
 LoRa.setPins(csPin, resetPin, irqPin);
 
 if (!LoRa.begin(FREQUENCY_IN_HZ)) {
-  Serial.println("LoRa init failed. Check your connections.");
+  //Serial.println("LoRa init failed. Check your connections.");
   while (true);                       // if failed, do nothing
 }
 
@@ -40,6 +41,9 @@ LoRa.setCodingRate4(codingRateDenominator);     // Coding Rate  (Configurado em 
   LoRa.enableCrc();
 #endif
 
+  pinMode(PIN_LED_ONBOARD, OUTPUT);
+  digitalWrite(PIN_LED_ONBOARD, LOW);
+
 }
 
 //=======================================================================
@@ -47,6 +51,8 @@ LoRa.setCodingRate4(codingRateDenominator);     // Coding Rate  (Configurado em 
 //=======================================================================
 // A função loop irá executar repetidamente
 void loop() {
+  digitalWrite(PIN_LED_ONBOARD, LOW);
   Phy_serial_receive_DL();
+  digitalWrite(PIN_LED_ONBOARD, HIGH);
   Phy_radio_receive_UL();
 }

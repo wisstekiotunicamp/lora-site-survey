@@ -57,13 +57,13 @@ codingrateinfo = Label(reg_parametrizacao, text = "5 a 8 => 4/5, 4/6, 4/7, 4/8",
 codingrateinfo.place(x=20,y=170)
 valor_codingrate=Entry(reg_parametrizacao, width=10, font=("Arial", 12))
 valor_codingrate.place(x=170,y=150)
-valor_codingrate.insert(0, "8")
+valor_codingrate.insert(0, "5")
 
 
 #---------------------- CRIAÇÃO DOS CAMPOS DE CONFIGURAÇÕES DE RÁDIO LORA ------------------------
 tx_power = Label(reg_parametrizacao, text = "TX Power", font=("Arial", 12))
 tx_power.place(x=20,y=190)
-tx_powerinfo = Label(reg_parametrizacao, text = "2 a 17dBm", font=("Arial", 8))
+tx_powerinfo = Label(reg_parametrizacao, text = "2 a 20dBm", font=("Arial", 8))
 tx_powerinfo.place(x=20,y=210)
 valor_tx_power=Entry(reg_parametrizacao, width=10, font=("Arial", 12))
 valor_tx_power.place(x=170,y=190)
@@ -85,6 +85,9 @@ status_texto.set("AGUARDANDO...")
 label_status = Label(reg_parametrizacao, textvariable=status_texto, font=("Arial", 10, "bold"), fg="gray")
 label_status.place(x=25, y=280)
 
+num_spreadingfactor = 7
+num_bandwidth = 125000
+num_codingrate = 5
 def captura_num_medidas():
     if valor_intervalo.get() == "":
         num_medidas = 0
@@ -96,8 +99,8 @@ def captura_num_medidas():
 
     return int(num_medidas)
 
-
 def captura_num_spreadingfactor():
+    global num_spreadingfactor
     if valor_spreadingfactor.get() == "":
         num_spreadingfactor = 12
     else:
@@ -111,30 +114,28 @@ def captura_num_spreadingfactor():
         
     return int(num_spreadingfactor)
 
-
-
 def captura_num_bandwidth():
+    global num_bandwidth
     if valor_bandwidth.get() == "":
         num_bandwidth = 125000
     else:
         num_bandwidth = int(valor_bandwidth.get())
         
     if(num_bandwidth < 200000):
-         num_spreadingfactor = 125000
+         num_bandwidth = 125000
 
     if((num_bandwidth >= 200000) or (num_bandwidth < 350000)):
-         num_spreadingfactor = 250000    
+         num_bandwidth = 250000    
 
     if(num_bandwidth >= 350000):
-         num_spreadingfactor = 500000
+         num_bandwidth = 500000
 
     return int(num_bandwidth)
 
-
-
 def captura_num_codingrate():
+    global num_codingrate
     if valor_codingrate.get() == "":
-        num_codingrate = 8
+        num_codingrate = 5
     else:
         num_codingrate = int(valor_codingrate.get())
         
@@ -146,8 +147,8 @@ def captura_num_codingrate():
 
     return int(num_codingrate)
 
-
 def captura_num_tx_power():
+    global num_tx_power
     if valor_tx_power.get() == "":
         num_tx_power = 17
     else:
@@ -162,6 +163,7 @@ def captura_num_tx_power():
     return int(num_tx_power)
 
 def captura_num_tempo_entre_medidas():
+    global num_tempo_entre_medidas
     if valor_tempo_entre_medidas.get() == "":
         num_tempo_entre_medidas = 10
     else:
@@ -202,22 +204,23 @@ bot_ini_teste.config(state="normal")
 #------------------------- CRIAÇÃO DA REGIÃO DE DESEMPENHO ---------------------
 reg_desempenho = Frame(master=janela_principal,borderwidth=1, relief='sunken') 
 #reg_desempenho.place(x=10,y=240,width=300,height=410) 
-reg_desempenho.place(x=10,y=370,width=300,height=410)
+reg_desempenho.place(x=10,y=370,width=300,height=510)
 
 titulo_desempenho = Label(reg_desempenho, font=("Arial", 16, "bold"),text = "Desempenho de Rede",padx=5,pady=5).pack(side=TOP, anchor="n")
 
 # --- CABEÇALHOS ---
 RDONW = Label(reg_desempenho, font=("Arial", 13, "bold"), text="RSSI DOWNLINK", fg="blue", padx=5, pady=5)
-RDONW.place(x=150, y=55, anchor="center") 
+RDONW.place(x=150, y=50, anchor="center") 
 
 RUP = Label(reg_desempenho, font=("Arial", 13, "bold"), text="RSSI UPLINK", fg="red", padx=5, pady=5)
-RUP.place(x=150, y=175, anchor="center")
+RUP.place(x=150, y=160, anchor="center")
 
 RPSR = Label(reg_desempenho, font=("Arial", 13, "bold"), text="PSR (Geral)", fg="green", padx=5, pady=5)
-RPSR.place(x=150, y=295, anchor="center")
+RPSR.place(x=150, y=270, anchor="center")
 
-#TXCANAL = Label(reg_desempenho, font=("Arial", 13, "bold"), text="PSR (Geral)", fg="green", padx=5, pady=5) 
-#TXCANAL.place(x=150, y=295, anchor="center")
+TXCANAL = Label(reg_desempenho, font=("Arial", 13, "bold"), text="Taxa de Canal", fg="green", padx=5, pady=5) 
+TXCANAL.place(x=150, y=325, anchor="center")
+
 # --- VARIÁVEIS DE TEXTO ---
 str_atual_dl = StringVar()
 str_max_dl = StringVar()
@@ -243,31 +246,34 @@ str_min_ul.set("Mín: 0 dBm")
 
 str_atual_psr.set("Atual: -- %")
 
+str_taxa_de_canal.set("Atual: -- BPS")
+str_air_time.set("Atual: -- S")
+
 # --- LABELS DOWNLINK ---
 lbl_atual_dl = Label(reg_desempenho, font=("Arial", 12, "bold"),textvariable = str_atual_dl,padx=5,pady=2)
-lbl_atual_dl.place(x=10, y=80) 
+lbl_atual_dl.place(x=10, y=65) 
 lbl_max_dl = Label(reg_desempenho, font=("Arial", 11),textvariable = str_max_dl,padx=5,pady=2)
-lbl_max_dl.place(x=10, y=105) 
+lbl_max_dl.place(x=10, y=90) 
 lbl_min_dl = Label(reg_desempenho, font=("Arial", 11),textvariable = str_min_dl,padx=5,pady=2)
-lbl_min_dl.place(x=10, y=130) 
+lbl_min_dl.place(x=10, y=115) 
 
 # --- LABELS UPLINK ---
 lbl_atual_ul = Label(reg_desempenho, font=("Arial", 12, "bold"),textvariable = str_atual_ul,padx=5,pady=2)
-lbl_atual_ul.place(x=10, y=200) 
+lbl_atual_ul.place(x=10, y=175) 
 lbl_max_ul = Label(reg_desempenho, font=("Arial", 11),textvariable = str_max_ul,padx=5,pady=2)
-lbl_max_ul.place(x=10, y=225) 
+lbl_max_ul.place(x=10, y=200) 
 lbl_min_ul = Label(reg_desempenho, font=("Arial", 11),textvariable = str_min_ul,padx=5,pady=2)
-lbl_min_ul.place(x=10, y=250) 
+lbl_min_ul.place(x=10, y=225) 
 
 # --- LABELS PSR ---
-lbl_atual_psr = Label(reg_desempenho, font=("Arial", 14, "bold"),textvariable = str_atual_psr,padx=5,pady=2)
-lbl_atual_psr.place(x=150, y=335, anchor="center") 
+lbl_atual_psr = Label(reg_desempenho, font=("Arial", 12, "bold"),textvariable = str_atual_psr,padx=5,pady=2)
+lbl_atual_psr.place(x=150, y=300, anchor="center") 
 
 # --- Taxa de Canal ---
-#lbl_atual_TC = Label(reg_desempenho, font=("Arial", 12, "bold"),textvariable = str_taxa_de_canal,padx=5,pady=2)
-#lbl_atual_TC.place(x=10, y=80) 
-#lbl_air_time = Label(reg_desempenho, font=("Arial", 11),textvariable = str_taxa_de_canal,padx=5,pady=2)
-#lbl_air_time.place(x=10, y=105) 
+lbl_atual_TC = Label(reg_desempenho, font=("Arial", 12, "bold"),textvariable = str_taxa_de_canal,padx=5,pady=2)
+lbl_atual_TC.place(x=10, y=340) 
+lbl_air_time = Label(reg_desempenho, font=("Arial", 11),textvariable = str_air_time,padx=5,pady=2)
+lbl_air_time.place(x=170, y=340) 
 
 #-------------------------------------------------------------------------------
 
@@ -292,13 +298,18 @@ def grafico_rssi(f,c):
         z= []
 
         psr_dl=[] 
+        taxa_de_canal_nominal = int(((num_spreadingfactor * num_bandwidth)/(2**num_spreadingfactor)) * (4/(4+num_codingrate)))
+        taxa_efetiva = []
+        psr_dl_produto =[]
+        psr_original =[]
         
         # Variáveis locais para guardar o último valor de Max/Min lido
         ultimo_max_dl = "0"
         ultimo_min_dl = "0"
         ultimo_max_ul = "0"
         ultimo_min_ul = "0"
-        
+        ultimo_taxa_efetiva = "0"
+        ultimo_air_time = "0"
         # Leitura do arquivo .tmp
         path_tmp = os.path.join(os.path.dirname(__file__), '../NIVEL4/dados_gerencia.tmp')
         
@@ -320,6 +331,9 @@ def grafico_rssi(f,c):
                     z.append(int(y[i][0]))     # Contador
                     x.append(float(y[i][1]))   # RSSI DL
                     psr_dl.append(float(y[i][2])) # PSR Geral
+                    psr_dl.append(psr_original)            # guarda original
+                # --- Calcula produto e guarda na nova lista ---
+                    psr_dl_produto.append(psr_original * taxa_de_canal_nominal)
                     xUP.append(float(y[i][4])) # RSSI UL
                     
                     # Lê as colunas extras:
@@ -350,10 +364,11 @@ def grafico_rssi(f,c):
 
         # --- SUBPLOT 3: PSR (GERAL) ---
         axis2 = f.add_subplot(313)
-        axis2.plot(z, psr_dl, label='PSR (Geral)', color='green')
+        #taxa_efetiva = taxa_de_canal_nominal * psr_dl
+        axis2.plot(z, psr_dl_produto, label='PSR (Geral)', color='green')
         axis2.set_ylabel('PSR (%)')
         axis2.set_xlabel('Medida')
-        axis2.set_ylim(-5, 105) 
+        axis2.set_ylim(0, 25000) 
         axis2.legend(loc='upper right', fontsize='x-small')
 
         # Atualiza os textos da tela com o último valor lido do arquivo

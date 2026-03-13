@@ -14,10 +14,13 @@
 #define resetPin 0               // LoRa radio reset
 #define irqPin 5                 // change for your board; must be a hardware interrupt pin
 
+// Led Vermelho - ENVIO e RECEBIMENTO
+const int PIN_LED_ONBOARD = D4; 
+
 #define FREQUENCY_IN_HZ 915E6    // LoRa Frequency
 #define txPower 17               // TX power in dBm, defaults to 17
 #define spreadingFactor 7        // ranges from 6-12,default 7 see API docs
-#define signalBandwidth 125E3    // signal bandwidth in Hz, Supported values are 7.8E3, 10.4E3, 15.6E3, 20.8E3, 31.25E3, 41.7E3, 62.5E3, 125E3, 250E3, and 500E3.
+#define signalBandwidth 500E3    // signal bandwidth in Hz, Supported values are 7.8E3, 10.4E3, 15.6E3, 20.8E3, 31.25E3, 41.7E3, 62.5E3, 125E3, 250E3, and 500E3.
 #define codingRateDenominator 5  // denominator of the coding rate, Supported values are between 5 and 8, these correspond to coding rates of 4/5 and 4/8. The coding rate numerator is fixed at 4.
 //#define loraCRC                // Enable or disable CRC usage, by default a CRC is not used.
 
