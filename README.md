@@ -1,5 +1,7 @@
 # lora-site-survey-DHT22 
 
+Responsáveis: Omar Branquinho, Felipe e Luan Azzi
+
 Este repositório apresenta uma descrição detalhada do desenvolvimento de um sistema embarcado com comunicação LoRa e aferição de luminosidade, temperatura e umidade. Todo o projeto foi desenvolvido com base no protocolo MoT e na metodologia TpM.
 
 O objetivo desta documentação é detalhar o funcionamento técnico do sistema de forma didática. Buscamos garantir que engenheiros, desenvolvedores e profissionais interessados no projeto possam compreender com clareza a arquitetura e o fluxo de dados propostos, desde os fundamentos operacionais locais até as transmissões sem fio de longa distância.
@@ -16,7 +18,7 @@ Nesta configuração de referência, um sensor de luminosidade (LDR) é conectad
 
 ### A Estrutura de Informação em Bytes
 
-A comunicação ocorre primariamente através de informações numéricas brutas, estruturadas em formato binário e agrupadas em **Bytes**, que representam a unidade fundamental de transmissão e comportam um número inteiro limitado à faixa de **0 a 255** (1 byte). Portanto, para que seja possível transmitir um dado maior do que 255, precisamos de **2 bytes**, como é o caso da leitura e conversão do sinal analógico de um sensor LDR pelo ADC (Conversor Analógico-Digital) do microcontrolador, que resulta em amostragens com valores de `0` (ausência de incidência luminosa) a `1023` (luminosidade máxima). 
+A comunicação ocorre primariamente através de informações numéricas brutas, estruturadas em formato binário e agrupadas em **Bytes**, que representam a unidade fundamental de transmissão e comportam um número inteiro limitado à faixa de **0 a 255** (1 byte). Portanto, para que seja possível transmitir um dado maior do que 255, precisamos de **2 bytes**, como é o caso da leitura e conversão do sinal analógico de um sensor LDR pelo ADC (Conversor Analógico-Digital) do microcontrolador, que resulta em amostragens com valores de `0` (pouca luz) a `1023` (muita luz). 
 
 Uma vez que esses valores excedem a capacidade de armazenamento de um único byte, o firmware fragmenta o dado em **dois bytes distintos**:
 
@@ -139,8 +141,27 @@ Para garantir que os pacotes cheguem organizados e blindados contra perdas, a tr
 - **O Núcleo de Dados (Bytes 16 a 24):** Acomoda de forma intocada e perfeitamente segura os nossos exatos `9 Bytes` contendo as leituras métricas brutas das lógicas que vimos acima.
 - **Reservas e Sobras de Manutenção (Bytes 25 a 51):** Espaços sem informação, preenchidos estaticamente com zeros. O benefício prático desse é criar uma simetria de pacote contínua sem precisar refazer tudo. Dessa forma, caso a indústria adicione novos medidores ambientais de solo daqui a alguns meses, os dados extras entrarão diretamente nessas cadeiras vazias do envio sem causar a necessidade de refatorar a máquina receptora do Gateway.
 
+#### Mapa Detalhado do Payload (Lista de Bytes)
+Abaixo está o detalhamento exato do que cada byte representa dentro da nossa matriz de transporte de 52 posições:
+
+| Posição (Byte) | Conteúdo e Função do Valor                                |
+|----------------|-----------------------------------------------------------|
+| **00 a 13**    | Endereçamentos de Rota (ID de Origem, Destino e Controles)|
+| **14**         | **RSSI** (Intensidade do Sinal da Antena)                 |
+| **15**         | **SNR** (Relação Sinal-Ruído)                             |
+| **16**         | Header/Aviso do sensor LDR (Ex: Flag `44`)                |
+| **17**         | Byte Inteiro (High Byte) da amostra de **Luminosidade**   |
+| **18**         | Byte Resto (Low Byte) da amostra de **Luminosidade**      |
+| **19**         | Header/Aviso do sensor DHT22 Termo (Ex: Flag `22`)        |
+| **20**         | Byte Inteiro (High Byte) da amostra de **Temperatura**    |
+| **21**         | Byte Resto (Low Byte) da amostra de **Temperatura**       |
+| **22**         | Header/Aviso do sensor DHT22 Hídrico (Ex: Flag `22`)      |
+| **23**         | Byte Inteiro (High Byte) da amostra de **Umidade**        |
+| **24**         | Byte Resto (Low Byte) da amostra de **Umidade**           |
+| **25 a 51**    | Reservas preenchidas com zeros `0` (Expansão Futura)      |
+
 ### Arquitetura em Camadas (Separando Código e Ação) 
-O firmware foi separado de acordo com a 
+O firmware do sistema foi separado em partes independentes (camadas), seguindo o conceito do padrão OSI usado na internet.
 
 As funções e rotinas internas se dividem para facilitar manutenções ou reparos, nunca corrompendo uma a outra:
 
