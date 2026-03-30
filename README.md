@@ -1,6 +1,6 @@
 # lora-site-survey-DHT22 
 
-Responsáveis: Omar Branquinho, Felipe e Luan Azzi
+Responsáveis: Omar Branquinho, Felipe Barbosa e Luan Azzi
 
 Este repositório apresenta uma descrição detalhada do desenvolvimento de um sistema embarcado com comunicação LoRa e aferição de luminosidade, temperatura e umidade. Todo o projeto foi desenvolvido com base no protocolo MoT e na metodologia TpM.
 
@@ -152,10 +152,10 @@ Abaixo está o detalhamento exato do que cada byte representa dentro da nossa ma
 | **16**         | Header/Aviso do sensor LDR (Ex: Flag `44`)                |
 | **17**         | Byte Inteiro (High Byte) da amostra de **Luminosidade**   |
 | **18**         | Byte Resto (Low Byte) da amostra de **Luminosidade**      |
-| **19**         | Header/Aviso do sensor DHT22 Termo (Ex: Flag `22`)        |
+| **19**         | Header/Aviso do sensor DHT22 Temperatura (Ex: Flag `22`)        |
 | **20**         | Byte Inteiro (High Byte) da amostra de **Temperatura**    |
 | **21**         | Byte Resto (Low Byte) da amostra de **Temperatura**       |
-| **22**         | Header/Aviso do sensor DHT22 Hídrico (Ex: Flag `22`)      |
+| **22**         | Header/Aviso do sensor DHT22 Umidade (Ex: Flag `22`)      |
 | **23**         | Byte Inteiro (High Byte) da amostra de **Umidade**        |
 | **24**         | Byte Resto (Low Byte) da amostra de **Umidade**           |
 | **25 a 51**    | Reservas preenchidas com zeros `0` (Expansão Futura)      |
