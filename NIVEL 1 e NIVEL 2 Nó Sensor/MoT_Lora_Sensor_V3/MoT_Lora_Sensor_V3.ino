@@ -1,5 +1,5 @@
 /*
-  MoT LoRa | WissTek IoT | 24/02/2026
+  MoT LoRa | WissTek IoT
   Desenvolvido por: Lucas Alachev e Raphael Montali da Assumpção
   Adicionado por: Anderson Fumachi teste de reconfiguração da rádio LoRa
 */
