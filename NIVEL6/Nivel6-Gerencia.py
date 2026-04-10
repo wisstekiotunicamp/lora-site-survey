@@ -57,13 +57,13 @@ codingrateinfo = Label(reg_parametrizacao, text = "5 a 8 => 4/5, 4/6, 4/7, 4/8",
 codingrateinfo.place(x=20,y=170)
 valor_codingrate=Entry(reg_parametrizacao, width=10, font=("Arial", 12))
 valor_codingrate.place(x=170,y=150)
-valor_codingrate.insert(0, "8")
+valor_codingrate.insert(0, "5")
 
 
 #---------------------- CRIAÇÃO DOS CAMPOS DE CONFIGURAÇÕES DE RÁDIO LORA ------------------------
 tx_power = Label(reg_parametrizacao, text = "TX Power", font=("Arial", 12))
 tx_power.place(x=20,y=190)
-tx_powerinfo = Label(reg_parametrizacao, text = "2 a 17dBm", font=("Arial", 8))
+tx_powerinfo = Label(reg_parametrizacao, text = "2 a 20dBm", font=("Arial", 8))
 tx_powerinfo.place(x=20,y=210)
 valor_tx_power=Entry(reg_parametrizacao, width=10, font=("Arial", 12))
 valor_tx_power.place(x=170,y=190)
@@ -134,7 +134,7 @@ def captura_num_bandwidth():
 
 def captura_num_codingrate():
     if valor_codingrate.get() == "":
-        num_codingrate = 8
+        num_codingrate = 5
     else:
         num_codingrate = int(valor_codingrate.get())
         
@@ -184,7 +184,7 @@ def grava_comandos(condicao_start):
     s.write(str(captura_num_bandwidth())+"\n") # Linha 4: Bandwidth
     s.write(str(captura_num_codingrate())+"\n") # Linha 5: CodingRate Denominator
     s.write(str(captura_num_tx_power())+"\n") # Linha 6: TX POWER
-    s.write(str(captura_num_tempo_entre_medidas())+"\n") # Linha 7: Tempo entre Medidas
+    s.write(str(captura_num_tempo_entre_medidas())+"\n") # Linha 7: Tempo entre Meiddas
     s.close()
 #-------------------------------------------------------------------------------
 
@@ -216,8 +216,6 @@ RUP.place(x=150, y=175, anchor="center")
 RPSR = Label(reg_desempenho, font=("Arial", 13, "bold"), text="PSR (Geral)", fg="green", padx=5, pady=5)
 RPSR.place(x=150, y=295, anchor="center")
 
-#TXCANAL = Label(reg_desempenho, font=("Arial", 13, "bold"), text="PSR (Geral)", fg="green", padx=5, pady=5) 
-#TXCANAL.place(x=150, y=295, anchor="center")
 # --- VARIÁVEIS DE TEXTO ---
 str_atual_dl = StringVar()
 str_max_dl = StringVar()
@@ -228,9 +226,6 @@ str_max_ul = StringVar()
 str_min_ul = StringVar()
 
 str_atual_psr = StringVar()
-
-str_taxa_de_canal = StringVar()
-str_air_time = StringVar()
 
 # Inicialização
 str_atual_dl.set("Atual: -- dBm")
@@ -263,11 +258,6 @@ lbl_min_ul.place(x=10, y=250)
 lbl_atual_psr = Label(reg_desempenho, font=("Arial", 14, "bold"),textvariable = str_atual_psr,padx=5,pady=2)
 lbl_atual_psr.place(x=150, y=335, anchor="center") 
 
-# --- Taxa de Canal ---
-#lbl_atual_TC = Label(reg_desempenho, font=("Arial", 12, "bold"),textvariable = str_taxa_de_canal,padx=5,pady=2)
-#lbl_atual_TC.place(x=10, y=80) 
-#lbl_air_time = Label(reg_desempenho, font=("Arial", 11),textvariable = str_taxa_de_canal,padx=5,pady=2)
-#lbl_air_time.place(x=10, y=105) 
 
 #-------------------------------------------------------------------------------
 
